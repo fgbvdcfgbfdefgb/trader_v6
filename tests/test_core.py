@@ -71,7 +71,8 @@ def test_features_are_causal():
 def test_env_conserves_cash_when_flat(cfg):
     _, close = _fake_day()
     c = torch.from_numpy(close)
-    env = MarketEnv(c, torch.ones_like(c), cfg.env, 5, torch.device("cpu"))
+    env = MarketEnv(c, torch.ones_like(c), cfg.env, 5, torch.device("cpu"),
+                    step_minutes=5)
     for _ in range(50):
         env.step(torch.zeros(5, 3))
     assert torch.allclose(env.equity, torch.full((5,), cfg.env.start_cash), atol=1e-4)
@@ -80,7 +81,8 @@ def test_env_conserves_cash_when_flat(cfg):
 def test_env_fees_make_churn_lose_money(cfg):
     _, close = _fake_day()
     c = torch.from_numpy(close)
-    env = MarketEnv(c, torch.ones_like(c) * 1e6, cfg.env, 4, torch.device("cpu"))
+    env = MarketEnv(c, torch.ones_like(c) * 1e6, cfg.env, 4, torch.device("cpu"),
+                    step_minutes=1)
     flip = torch.zeros(4, 3); flip[:, 0] = 1.0
     for i in range(40):
         env.step(flip if i % 2 == 0 else -flip)
@@ -102,6 +104,39 @@ def test_futures_respects_gross_cap(cfg):
     assert (w < 0).any()                            # shorts are reachable
 
 
+def test_mark_to_market_matches_buy_and_hold(cfg):
+    """With one full long position and no further trades, equity must track price."""
+    import dataclasses
+    A, T = 3, 61
+    close = np.ones((A, T), dtype=np.float32) * 100.0
+    close[0] = np.linspace(100, 110, T)
+    c = torch.from_numpy(close)
+    ec = dataclasses.replace(cfg.env, mode="spot", spot_fee=0.0, slippage_bps=0.0,
+                             turnover_penalty=0.0)
+    env = MarketEnv(c, torch.ones_like(c) * 1e9, ec, 1, torch.device("cpu"),
+                    step_minutes=10)
+    w = torch.zeros(1, 3); w[0, 0] = 1.0
+    for _ in range(6):
+        env.step(w)
+    # 100 -> 110 on the only held asset == +10% on $20
+    assert abs(env.equity.item() - ec.start_cash * 1.1) < 2e-2
+
+
+def test_decision_interval_preserves_minute_marking(cfg):
+    """Liquidation inside an interval must be caught even though we act every K min."""
+    import dataclasses
+    A, T = 3, 31
+    close = np.ones((A, T), dtype=np.float32) * 100.0
+    close[0, 5] = 40.0                       # one-minute crash, recovers after
+    c = torch.from_numpy(close)
+    ec = dataclasses.replace(cfg.env, mode="futures", max_leverage=10.0)
+    env = MarketEnv(c, torch.ones_like(c) * 1e9, ec, 2, torch.device("cpu"),
+                    step_minutes=30)
+    full = torch.zeros(2, 3); full[:, 0] = 10.0
+    env.step(full)
+    assert (~env.alive).all(), "intra-interval liquidation was missed"
+
+
 def test_liquidation_zeroes_equity(cfg):
     import dataclasses
     A, T = 3, 20
@@ -109,7 +144,8 @@ def test_liquidation_zeroes_equity(cfg):
     close[0, 5:] = 50                               # -50% gap on asset 0
     c = torch.from_numpy(close)
     ec = dataclasses.replace(cfg.env, mode="futures", max_leverage=10.0)
-    env = MarketEnv(c, torch.ones_like(c) * 1e9, ec, 2, torch.device("cpu"))
+    env = MarketEnv(c, torch.ones_like(c) * 1e9, ec, 2, torch.device("cpu"),
+                    step_minutes=1)
     full = torch.zeros(2, 3); full[:, 0] = 10.0
     for _ in range(8):
         env.step(full)

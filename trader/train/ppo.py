@@ -33,8 +33,10 @@ class Rollout:
 @torch.no_grad()
 def collect(agent: TradeMaker, env, ctx: torch.Tensor, risk_budget: torch.Tensor,
             cfg_env, cfg_ppo, seg_len: int, deterministic: bool = False) -> Rollout:
+    """ctx is minute-resolution [T_minutes, D]; the agent acts every env.K minutes."""
     device = ctx.device
-    T = env.T - 1
+    T = env.n_steps
+    K = env.K
     N, A = env.N, env.A
     port = env.reset()
     h = agent.init_state(N, device)
@@ -59,12 +61,13 @@ def collect(agent: TradeMaker, env, ctx: torch.Tensor, risk_budget: torch.Tensor
             h0[t // seg_len] = h.detach()
         buf["port"][t] = port
         buf["alive"][t] = env.alive.float()
-        mu, v, h = agent.step(ctx[t].unsqueeze(0).expand(N, -1), port, h)
+        mu, v, h = agent.step(ctx[t * K].unsqueeze(0).expand(N, -1), port, h)
         dist = agent.dist(mu)
         a = mu if deterministic else dist.sample()
         lp = dist.log_prob(a).sum(-1)
         w = TradeMaker.to_weights(a, cfg_env.mode, env.max_lev,
-                                  risk_budget[t].expand(N) if risk_budget is not None else None)
+                                  risk_budget[t * K].expand(N)
+                                  if risk_budget is not None else None)
         port, r, done, _ = env.step(w)
         buf["actions"][t] = a
         buf["logp"][t] = lp
@@ -73,7 +76,7 @@ def collect(agent: TradeMaker, env, ctx: torch.Tensor, risk_budget: torch.Tensor
         buf["weights"][t] = w
         equity[t + 1] = env.equity
 
-    _, last_v, _ = agent.step(ctx[T - 1].unsqueeze(0).expand(N, -1), port, h)
+    _, last_v, _ = agent.step(ctx[(T - 1) * K].unsqueeze(0).expand(N, -1), port, h)
     return Rollout(ctx=ctx, h0=h0, seg_len=seg_len, equity=equity,
                    last_value=last_v * 0.0, **buf)
 
@@ -107,7 +110,7 @@ def _segment(x: torch.Tensor, seg_len: int, T: int):
 
 def ppo_update(agent: TradeMaker, roll: Rollout, adv: torch.Tensor, ret: torch.Tensor,
                cfg_ppo, cfg_env, entropy_coef: float, optimizer, scaler=None,
-               ctx_grad: torch.Tensor | None = None,
+               ctx_grad: torch.Tensor | None = None, decision_every: int = 1,
                extra_backward=None) -> Dict[str, float]:
     """One PPO phase. If `ctx_grad` is given it replaces the detached rollout context,
     which lets the policy-gradient flow back into the analyst/predictor."""
@@ -115,6 +118,7 @@ def ppo_update(agent: TradeMaker, roll: Rollout, adv: torch.Tensor, ret: torch.T
     L = roll.seg_len
     device = roll.rewards.device
     ctx = ctx_grad if ctx_grad is not None else roll.ctx
+    ctx = ctx[::decision_every]
 
     port_s, S, pad = _segment(roll.port, L, T)
     act_s, _, _ = _segment(roll.actions, L, T)

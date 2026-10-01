@@ -12,10 +12,10 @@ SYMBOLS = ["BTCUSDT", "ETHUSDT", "LTCUSDT"]
 # ---------------------------------------------------------------- model sizes
 # Picked automatically from the smallest GPU found (see resources.py).
 SIZE_PRESETS = {
-    "tiny":  dict(d_model=96,  n_layers=2, n_heads=4, tcn_channels=64,  policy_hidden=128, n_envs=8),
-    "small": dict(d_model=160, n_layers=3, n_heads=4, tcn_channels=96,  policy_hidden=192, n_envs=12),
-    "base":  dict(d_model=256, n_layers=4, n_heads=8, tcn_channels=128, policy_hidden=256, n_envs=16),
-    "large": dict(d_model=384, n_layers=6, n_heads=8, tcn_channels=192, policy_hidden=384, n_envs=24),
+    "tiny":  dict(d_model=96,  n_layers=2, n_heads=4, tcn_channels=64,  policy_hidden=128, n_envs=16),
+    "small": dict(d_model=160, n_layers=3, n_heads=4, tcn_channels=96,  policy_hidden=192, n_envs=32),
+    "base":  dict(d_model=256, n_layers=4, n_heads=8, tcn_channels=128, policy_hidden=256, n_envs=64),
+    "large": dict(d_model=384, n_layers=6, n_heads=8, tcn_channels=192, policy_hidden=384, n_envs=96),
 }
 
 
@@ -61,6 +61,7 @@ class EnvConfig:
     maint_margin: float = 0.005       # liquidation threshold on gross notional
     min_trade_frac: float = 0.002     # ignore rebalances smaller than this (no-op)
     use_risk_gate: bool = True        # analyst's risk budget scales the trader's size
+    decision_every: int = 5           # minutes between rebalances (marking stays 1m)
     n_envs: int = 16                  # parallel sampled trajectories over the same day
     reward_scale: float = 10.0
     turnover_penalty: float = 0.0005
@@ -79,7 +80,7 @@ class PPOConfig:
     entropy_final: float = 0.001
     max_grad_norm: float = 0.5
     update_epochs: int = 4
-    minibatch_steps: int = 256        # timesteps per minibatch (x n_envs)
+    minibatch_steps: int = 96         # decision steps per truncated-BPTT segment
     lr: float = 3e-4
     target_kl: float = 0.03
 

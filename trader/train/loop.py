@@ -169,8 +169,9 @@ class Trainer:
         rb = an["risk_budget"].detach().float()
         gate = (0.5 + 0.5 * rb) if cfg.env.use_risk_gate else None
         env_cfg = self._env_cfg(progress)
-        env = MarketEnv(close, volume, env_cfg, cfg.env.n_envs, self.device)
-        seg = min(cfg.ppo.minibatch_steps, env.T - 1)
+        env = MarketEnv(close, volume, env_cfg, cfg.env.n_envs, self.device,
+                        step_minutes=cfg.env.decision_every)
+        seg = min(cfg.ppo.minibatch_steps, env.n_steps)
         ctx_det = ctx.detach()
         roll = collect(self.trader, env, ctx_det, gate, env_cfg, cfg.ppo, seg)
         adv, ret = compute_gae(roll, cfg.ppo.gamma, cfg.ppo.gae_lambda)
@@ -181,7 +182,8 @@ class Trainer:
         ent_coef = cfg.ppo.entropy_coef + (cfg.ppo.entropy_final - cfg.ppo.entropy_coef) * progress
         if "trader" in self.owned:
             st = ppo_update(self.trader, roll, adv, ret, cfg.ppo, env_cfg, ent_coef,
-                            self.opt["trader"], None)
+                            self.opt["trader"], None,
+                            decision_every=cfg.env.decision_every)
             self._reduce_grads("trader")
             metrics.update(st)
 
@@ -233,7 +235,7 @@ class Trainer:
         act_s, _, _ = _segment(roll.actions, L, T)
         adv_s, _, _ = _segment(adv.unsqueeze(-1), L, T)
         alive_s, _, _ = _segment(roll.alive.unsqueeze(-1), L, T)
-        c = ctx_grad[:T]
+        c = ctx_grad[::self.cfg.env.decision_every][:T]
         if pad:
             c = torch.cat([c, c[-1:].expand(pad, -1)], dim=0)
         ctx_s = c.view(S, L, -1).unsqueeze(1).expand(S, N, L, -1).reshape(S * N, L, -1)
@@ -273,6 +275,7 @@ class Trainer:
         d = {
             "epoch": epoch, "date": day.date, "symbols": day.symbols,
             "mode": cfg.env.mode, "start_cash": cfg.env.start_cash,
+            "dstep": cfg.env.decision_every,
             "target": cfg.env.target_equity, "equity": eq,
             "rewards": roll.rewards.detach().cpu().numpy(),
             "weights_med": wts[:, med_env, :],
@@ -339,8 +342,9 @@ class Trainer:
             rb = an["risk_budget"].float()
             gate = (0.5 + 0.5 * rb) if self.cfg.env.use_risk_gate else None
             env = MarketEnv(close, volume, self.cfg.env,
-                            max(4, self.cfg.env.n_envs // 2), self.device)
-            seg = min(self.cfg.ppo.minibatch_steps, env.T - 1)
+                            max(4, self.cfg.env.n_envs // 2), self.device,
+                            step_minutes=self.cfg.env.decision_every)
+            seg = min(self.cfg.ppo.minibatch_steps, env.n_steps)
             roll = collect(self.trader, env, ctx, gate, self.cfg.env, self.cfg.ppo, seg,
                            deterministic=True)
             s = env.summary()

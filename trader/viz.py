@@ -48,15 +48,17 @@ def _save(fig, path):
     return path
 
 
-def _mins(T):
-    return np.arange(T) / 60.0
+def _mins(T, step=1):
+    """x-axis in hours for a series sampled every `step` minutes."""
+    return np.arange(T) * step / 60.0
 
 
 # --------------------------------------------------------------------- epoch
 def plot_equity(d: Dict, path: str):
-    eq = d["equity"]                                  # [T+1, N]
+    eq = d["equity"]                                  # [steps+1, N]
+    K = d.get("dstep", 1)
     T = eq.shape[0]
-    x = _mins(T)
+    x = _mins(T, K)
     fig = plt.figure(figsize=(11, 7))
     gs = gridspec.GridSpec(3, 1, height_ratios=[2.2, 1, 1], hspace=0.32)
 
@@ -84,8 +86,8 @@ def plot_equity(d: Dict, path: str):
 
     ax3 = fig.add_subplot(gs[2], sharex=ax)
     cr = np.cumsum(d["rewards"], axis=0)
-    ax3.plot(_mins(cr.shape[0]), cr.mean(1), color="#ffd166", lw=1.6)
-    ax3.fill_between(_mins(cr.shape[0]), cr.min(1), cr.max(1),
+    ax3.plot(_mins(cr.shape[0], K), cr.mean(1), color="#ffd166", lw=1.6)
+    ax3.fill_between(_mins(cr.shape[0], K), cr.min(1), cr.max(1),
                      color="#ffd166", alpha=0.18)
     ax3.set_ylabel("cum. reward"); ax3.set_xlabel("hour of day (UTC)")
     return _save(fig, path)
@@ -96,8 +98,10 @@ def plot_market(d: Dict, path: str):
     A, T = close.shape
     fig, axes = plt.subplots(A, 1, figsize=(11, 2.6 * A), sharex=True)
     axes = np.atleast_1d(axes)
+    K = d.get("dstep", 1)
     x = _mins(T)
-    xw = _mins(w.shape[0])
+    midx = np.minimum(np.arange(w.shape[0]) * K, T - 1)
+    xw = midx / 60.0
     for a in range(A):
         ax = axes[a]
         ax.plot(x, close[a], color=ACCENT[a], lw=1.3)
@@ -114,10 +118,10 @@ def plot_market(d: Dict, path: str):
         dpos = np.diff(pos, prepend=pos[0])
         buys = np.flatnonzero(dpos > 0.05 * lim)
         sells = np.flatnonzero(dpos < -0.05 * lim)
-        ax.scatter(xw[buys], close[a][buys], s=7, marker="^", color="#06d6a0",
-                   alpha=0.55, zorder=5)
-        ax.scatter(xw[sells], close[a][sells], s=7, marker="v", color="#f72585",
-                   alpha=0.55, zorder=5)
+        ax.scatter(xw[buys], close[a][midx[buys]], s=12, marker="^", color="#06d6a0",
+                   alpha=0.7, zorder=5)
+        ax.scatter(xw[sells], close[a][midx[sells]], s=12, marker="v", color="#f72585",
+                   alpha=0.7, zorder=5)
         chg = 100 * (close[a][-1] / close[a][0] - 1)
         ax.set_title(f"{d['symbols'][a]}  buy-and-hold {chg:+.2f}%  "
                      f"(agent exposure shaded)", loc="left")
@@ -129,19 +133,20 @@ def plot_market(d: Dict, path: str):
 
 def plot_positions(d: Dict, path: str):
     w = d["weights_med"]
+    K = d.get("dstep", 1)
     fig = plt.figure(figsize=(11, 6))
     gs = gridspec.GridSpec(3, 1, height_ratios=[1.5, 1, 1], hspace=0.35)
     ax = fig.add_subplot(gs[0])
     lim = max(0.1, float(np.abs(w).max()))
     im = ax.imshow(w.T, aspect="auto", cmap=HEAT, vmin=-lim, vmax=lim,
-                   extent=[0, w.shape[0] / 60, len(d["symbols"]) - 0.5, -0.5],
+                   extent=[0, w.shape[0] * K / 60, len(d["symbols"]) - 0.5, -0.5],
                    interpolation="nearest")
     ax.set_yticks(range(len(d["symbols"]))); ax.set_yticklabels(d["symbols"])
     ax.set_title("target weight per asset over the day (median trajectory)")
     fig.colorbar(im, ax=ax, pad=0.01, label="weight")
 
     ax2 = fig.add_subplot(gs[1])
-    x = _mins(w.shape[0])
+    x = _mins(w.shape[0], K)
     ax2.plot(x, np.abs(w).sum(1), color="#4cc9f0", lw=1.3, label="gross")
     ax2.plot(x, w.sum(1), color="#ffd166", lw=1.3, label="net")
     ax2.axhline(0, color="#9aa0a6", lw=0.7)
@@ -262,12 +267,14 @@ def plot_distribution(d: Dict, path: str):
     ax.axvline(d["start_cash"], color="#9aa0a6", ls=":", label="start $20")
     ax.axvline(d["target"], color="#ffd166", ls="--", label=f"target ${d['target']:.0f}")
     ax.axvline(float(np.median(final)), color="#f72585", lw=1.6, label="median")
-    ax.set_title("final equity across trajectories"); ax.set_xlabel("$"); ax.legend(fontsize=7)
+    ax.set_title("final equity across trajectories"); ax.set_xlabel("$")
+    ax.legend(fontsize=7)
 
     ax = axes[1]
     rets = 100 * (np.diff(d["equity"], axis=0) / np.maximum(d["equity"][:-1], 1e-9))
     ax.hist(rets.ravel(), bins=100, color="#06d6a0", alpha=0.8)
-    ax.set_yscale("log"); ax.set_title("per-minute return %"); ax.set_xlabel("%")
+    ax.set_yscale("log"); ax.set_xlabel("%")
+    ax.set_title(f"per-step return % ({d.get('dstep', 1)}m)")
 
     ax = axes[2]
     labels = ["turnover", "fees $", "trades", "bankrupt %"]

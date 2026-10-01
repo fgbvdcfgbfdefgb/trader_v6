@@ -45,6 +45,8 @@ def parse():
     g.add_argument("--target", type=float, default=30.0)
     g.add_argument("--leverage", type=float, default=10.0, help="futures gross cap")
     g.add_argument("--n-envs", type=int, default=0, help="0 = from size preset")
+    g.add_argument("--decision-every", type=int, default=5,
+                   help="minutes between rebalances; P&L is still marked every minute")
     g.add_argument("--no-risk-gate", action="store_true",
                    help="stop the analyst's risk budget from scaling trade size")
 
@@ -95,6 +97,7 @@ def main():
     cfg.env.target_equity = a.target
     cfg.env.max_leverage = a.leverage if a.mode == "futures" else 1.0
     cfg.env.use_risk_gate = not a.no_risk_gate
+    cfg.env.decision_every = a.decision_every
     if a.n_envs > 0:
         cfg.env.n_envs = a.n_envs
 
