@@ -1,0 +1,266 @@
+{
+  "source": "Binance public data (data.binance.vision), spot 1m klines",
+  "interval": "1m",
+  "symbols": {
+    "BTCUSDT": {
+      "rows": 4797840,
+      "days": 3332,
+      "start": "2017-08-17",
+      "end": "2026-09-30"
+    },
+    "ETHUSDT": {
+      "rows": 4797840,
+      "days": 3332,
+      "start": "2017-08-17",
+      "end": "2026-09-30"
+    },
+    "LTCUSDT": {
+      "rows": 4627948,
+      "days": 3214,
+      "start": "2017-12-13",
+      "end": "2026-09-30"
+    }
+  },
+  "files": [
+    {
+      "symbol": "BTCUSDT",
+      "year": 2017,
+      "rows": 197040,
+      "days": 137,
+      "bytes": 5569470,
+      "path": "data/klines/BTCUSDT_2017.parquet"
+    },
+    {
+      "symbol": "BTCUSDT",
+      "year": 2018,
+      "rows": 525600,
+      "days": 365,
+      "bytes": 17051813,
+      "path": "data/klines/BTCUSDT_2018.parquet"
+    },
+    {
+      "symbol": "BTCUSDT",
+      "year": 2019,
+      "rows": 525600,
+      "days": 365,
+      "bytes": 17389473,
+      "path": "data/klines/BTCUSDT_2019.parquet"
+    },
+    {
+      "symbol": "BTCUSDT",
+      "year": 2020,
+      "rows": 527040,
+      "days": 366,
+      "bytes": 17751192,
+      "path": "data/klines/BTCUSDT_2020.parquet"
+    },
+    {
+      "symbol": "BTCUSDT",
+      "year": 2021,
+      "rows": 525600,
+      "days": 365,
+      "bytes": 18503634,
+      "path": "data/klines/BTCUSDT_2021.parquet"
+    },
+    {
+      "symbol": "BTCUSDT",
+      "year": 2022,
+      "rows": 525600,
+      "days": 365,
+      "bytes": 18213832,
+      "path": "data/klines/BTCUSDT_2022.parquet"
+    },
+    {
+      "symbol": "BTCUSDT",
+      "year": 2023,
+      "rows": 525600,
+      "days": 365,
+      "bytes": 17901308,
+      "path": "data/klines/BTCUSDT_2023.parquet"
+    },
+    {
+      "symbol": "BTCUSDT",
+      "year": 2024,
+      "rows": 527040,
+      "days": 366,
+      "bytes": 18030455,
+      "path": "data/klines/BTCUSDT_2024.parquet"
+    },
+    {
+      "symbol": "BTCUSDT",
+      "year": 2025,
+      "rows": 525600,
+      "days": 365,
+      "bytes": 18240021,
+      "path": "data/klines/BTCUSDT_2025.parquet"
+    },
+    {
+      "symbol": "BTCUSDT",
+      "year": 2026,
+      "rows": 393120,
+      "days": 273,
+      "bytes": 14545027,
+      "path": "data/klines/BTCUSDT_2026.parquet"
+    },
+    {
+      "symbol": "ETHUSDT",
+      "year": 2017,
+      "rows": 197040,
+      "days": 137,
+      "bytes": 4560334,
+      "path": "data/klines/ETHUSDT_2017.parquet"
+    },
+    {
+      "symbol": "ETHUSDT",
+      "year": 2018,
+      "rows": 525600,
+      "days": 365,
+      "bytes": 14934418,
+      "path": "data/klines/ETHUSDT_2018.parquet"
+    },
+    {
+      "symbol": "ETHUSDT",
+      "year": 2019,
+      "rows": 525600,
+      "days": 365,
+      "bytes": 13620958,
+      "path": "data/klines/ETHUSDT_2019.parquet"
+    },
+    {
+      "symbol": "ETHUSDT",
+      "year": 2020,
+      "rows": 527040,
+      "days": 366,
+      "bytes": 14226749,
+      "path": "data/klines/ETHUSDT_2020.parquet"
+    },
+    {
+      "symbol": "ETHUSDT",
+      "year": 2021,
+      "rows": 525600,
+      "days": 365,
+      "bytes": 17472806,
+      "path": "data/klines/ETHUSDT_2021.parquet"
+    },
+    {
+      "symbol": "ETHUSDT",
+      "year": 2022,
+      "rows": 525600,
+      "days": 365,
+      "bytes": 16531629,
+      "path": "data/klines/ETHUSDT_2022.parquet"
+    },
+    {
+      "symbol": "ETHUSDT",
+      "year": 2023,
+      "rows": 525600,
+      "days": 365,
+      "bytes": 14807098,
+      "path": "data/klines/ETHUSDT_2023.parquet"
+    },
+    {
+      "symbol": "ETHUSDT",
+      "year": 2024,
+      "rows": 527040,
+      "days": 366,
+      "bytes": 16233237,
+      "path": "data/klines/ETHUSDT_2024.parquet"
+    },
+    {
+      "symbol": "ETHUSDT",
+      "year": 2025,
+      "rows": 525600,
+      "days": 365,
+      "bytes": 17108704,
+      "path": "data/klines/ETHUSDT_2025.parquet"
+    },
+    {
+      "symbol": "ETHUSDT",
+      "year": 2026,
+      "rows": 393120,
+      "days": 273,
+      "bytes": 12718753,
+      "path": "data/klines/ETHUSDT_2026.parquet"
+    },
+    {
+      "symbol": "LTCUSDT",
+      "year": 2017,
+      "rows": 27148,
+      "days": 19,
+      "bytes": 812040,
+      "path": "data/klines/LTCUSDT_2017.parquet"
+    },
+    {
+      "symbol": "LTCUSDT",
+      "year": 2018,
+      "rows": 525600,
+      "days": 365,
+      "bytes": 13227350,
+      "path": "data/klines/LTCUSDT_2018.parquet"
+    },
+    {
+      "symbol": "LTCUSDT",
+      "year": 2019,
+      "rows": 525600,
+      "days": 365,
+      "bytes": 12832963,
+      "path": "data/klines/LTCUSDT_2019.parquet"
+    },
+    {
+      "symbol": "LTCUSDT",
+      "year": 2020,
+      "rows": 527040,
+      "days": 366,
+      "bytes": 12943265,
+      "path": "data/klines/LTCUSDT_2020.parquet"
+    },
+    {
+      "symbol": "LTCUSDT",
+      "year": 2021,
+      "rows": 525600,
+      "days": 365,
+      "bytes": 13570704,
+      "path": "data/klines/LTCUSDT_2021.parquet"
+    },
+    {
+      "symbol": "LTCUSDT",
+      "year": 2022,
+      "rows": 525600,
+      "days": 365,
+      "bytes": 11703890,
+      "path": "data/klines/LTCUSDT_2022.parquet"
+    },
+    {
+      "symbol": "LTCUSDT",
+      "year": 2023,
+      "rows": 525600,
+      "days": 365,
+      "bytes": 12382314,
+      "path": "data/klines/LTCUSDT_2023.parquet"
+    },
+    {
+      "symbol": "LTCUSDT",
+      "year": 2024,
+      "rows": 527040,
+      "days": 366,
+      "bytes": 12634178,
+      "path": "data/klines/LTCUSDT_2024.parquet"
+    },
+    {
+      "symbol": "LTCUSDT",
+      "year": 2025,
+      "rows": 525600,
+      "days": 365,
+      "bytes": 12874429,
+      "path": "data/klines/LTCUSDT_2025.parquet"
+    },
+    {
+      "symbol": "LTCUSDT",
+      "year": 2026,
+      "rows": 393120,
+      "days": 273,
+      "bytes": 9119083,
+      "path": "data/klines/LTCUSDT_2026.parquet"
+    }
+  ]
+}

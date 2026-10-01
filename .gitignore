@@ -1,0 +1,7 @@
+runs/
+*.pyc
+__pycache__/
+.cache_trader_v6/
+.ipynb_checkpoints/
+*.egg-info/
+.pytest_cache/

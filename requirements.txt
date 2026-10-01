@@ -1,0 +1,7 @@
+# trader_v6 - everything is pip-installable and works fully offline afterwards.
+# On Snowflake Container Runtime torch is usually preinstalled; this file is still safe.
+torch>=2.1
+numpy>=1.24
+pandas>=2.0
+pyarrow>=12.0
+matplotlib>=3.7
