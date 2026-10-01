@@ -32,7 +32,8 @@ class TradeMaker(nn.Module):
         self.body = nn.Sequential(nn.LayerNorm(h), nn.Linear(h, h), nn.GELU())
         self.mu = nn.Linear(h, n_assets)
         self.v = nn.Linear(h, 1)
-        self.log_std = nn.Parameter(torch.full((n_assets,), -0.7))
+        # start fairly deterministic: a wide initial policy just pays fees
+        self.log_std = nn.Parameter(torch.full((n_assets,), -1.2))
         self.hidden = h
         nn.init.zeros_(self.mu.bias)
         self.mu.weight.data.mul_(0.1)

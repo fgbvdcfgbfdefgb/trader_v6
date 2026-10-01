@@ -17,6 +17,8 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
+from collections import OrderedDict
+
 from .features import N_FEATURES, RAW_COLS, day_features
 
 MIN_MS = 60_000
@@ -55,6 +57,13 @@ class MarketData:
         self.verbose = verbose
         self.cache_dir = cache_dir or os.path.join(root, ".cache_trader_v6")
         os.makedirs(self.cache_dir, exist_ok=True)
+        # Feature engineering is pandas-bound and identical every time a day is
+        # resampled, so memoise it. On a 4-core box shared with another workload this
+        # is the difference between starving the machine and barely touching the CPU.
+        self.feat_dir = os.path.join(self.cache_dir, "feat")
+        self.mem_cache: "OrderedDict[int, np.ndarray]" = OrderedDict()
+        self.mem_cache_max = int(os.environ.get("TRADER_FEAT_MEM_DAYS", "48"))
+        self.disk_feat_cache = os.environ.get("TRADER_FEAT_DISK", "1") == "1"
         self._build_or_load()
 
     # ------------------------------------------------------------------ cache
@@ -234,7 +243,7 @@ class MarketData:
         self.feat_std = np.ones(N_FEATURES, dtype=np.float32)
         ok_days = np.flatnonzero(day_ok)
         rng = np.random.default_rng(0)
-        sample = rng.choice(ok_days, size=min(200, len(ok_days)), replace=False)
+        sample = rng.choice(ok_days, size=min(96, len(ok_days)), replace=False)
         acc = []
         for d in sample:
             acc.append(self._raw_features(int(d)).reshape(-1, N_FEATURES))
@@ -281,11 +290,41 @@ class MarketData:
         block, mod = self._window(day_index)
         return day_features(block, mod, DAY_MIN)
 
+    def _features_for(self, day_index: int, block, mod) -> np.ndarray:
+        """Normalised features for one day, memoised in RAM and on disk."""
+        hit = self.mem_cache.get(day_index)
+        if hit is not None:
+            self.mem_cache.move_to_end(day_index)
+            return hit
+
+        path = os.path.join(self.feat_dir, f"d{day_index:06d}.npy")
+        feats = None
+        if self.disk_feat_cache and os.path.exists(path):
+            try:
+                feats = np.load(path).astype(np.float32)
+            except (OSError, ValueError):
+                feats = None
+        if feats is None:
+            feats = day_features(block, mod, DAY_MIN)
+            feats = (feats - self.feat_mean) / self.feat_std
+            feats = np.clip(feats, -8.0, 8.0).astype(np.float32)
+            if self.disk_feat_cache:
+                try:
+                    os.makedirs(self.feat_dir, exist_ok=True)
+                    tmp = path + f".{os.getpid()}.tmp"
+                    np.save(tmp, feats.astype(np.float16))
+                    os.replace(tmp, path)
+                except OSError:
+                    self.disk_feat_cache = False      # read-only or full disk: skip
+
+        self.mem_cache[day_index] = feats
+        while len(self.mem_cache) > self.mem_cache_max:
+            self.mem_cache.popitem(last=False)
+        return feats
+
     def get_day(self, day_index: int, split: str = "train") -> DayBatch:
         block, mod = self._window(day_index)
-        feats = day_features(block, mod, DAY_MIN)
-        feats = (feats - self.feat_mean) / self.feat_std
-        feats = np.clip(feats, -8.0, 8.0).astype(np.float32)
+        feats = self._features_for(day_index, block, mod)
         day = block[:, -DAY_MIN:, :]
         ci, vi = RAW_COLS.index("close"), RAW_COLS.index("volume")
         return DayBatch(

@@ -32,6 +32,9 @@ def _worker(rank: int, cfg_d: dict, plan_d: dict, root: str, addr: str, port: in
         cfg = _cfg_from_dict(cfg_d)
         plan = _plan_from_dict(plan_d)
         torch.set_num_threads(max(1, plan.cpu_threads))
+        for v in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS",
+                  "NUMEXPR_NUM_THREADS"):
+            os.environ.setdefault(v, str(max(1, plan.cpu_threads)))
         if plan.world_size > 1:
             os.environ.setdefault("MASTER_ADDR", addr)
             os.environ.setdefault("MASTER_PORT", str(port))
@@ -41,14 +44,16 @@ def _worker(rank: int, cfg_d: dict, plan_d: dict, root: str, addr: str, port: in
             dist.init_process_group(backend=backend, rank=rank,
                                     world_size=plan.world_size,
                                     init_method=f"tcp://{addr}:{port}")
-        if plan.devices[rank].startswith("cuda"):
-            torch.cuda.set_device(plan.devices[rank])
+        dev = plan.devices[rank]
+        if dev.startswith("cuda"):
+            torch.cuda.set_device(dev)
+        bar = {"device_ids": [torch.device(dev).index]} if dev.startswith("cuda") else {}
         tr = Trainer(cfg, plan, rank, root=root)
         if dist.is_initialized():
-            dist.barrier()
+            dist.barrier(**bar)
         tr.run()
         if dist.is_initialized():
-            dist.barrier()
+            dist.barrier(**bar)
             dist.destroy_process_group()
     except Exception:
         print(f"[rank {rank}] FAILED\n{traceback.format_exc()}", flush=True)

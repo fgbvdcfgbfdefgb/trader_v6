@@ -196,6 +196,13 @@ scripts/snowflake_run.py  Snowflake entrypoint
 tests/                    unit tests, run with `python -m pytest tests -q`
 ```
 
+## Results
+
+See **[RESULTS.md](RESULTS.md)** for a real 531-epoch run: mean daily return improved
+from -24.7% to -4.5%, turnover fell 576x -> 58x, fees 8.6x lower, zero liquidations at
+10x leverage - and an honest held-out result of -3.4%/day with the $30 target never
+reached. Charts in [`docs/sample_run/`](docs/sample_run).
+
 ## Honest notes
 
 * Backtest only. Fills are assumed at the next minute's close with a fee + slippage

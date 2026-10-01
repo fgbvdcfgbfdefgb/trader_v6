@@ -59,12 +59,15 @@ class EnvConfig:
     slippage_bps: float = 1.0         # base slippage, scaled by trade size / liquidity
     funding_rate_8h: float = 0.0001   # perpetual funding proxy, charged every 8h
     maint_margin: float = 0.005       # liquidation threshold on gross notional
-    min_trade_frac: float = 0.002     # ignore rebalances smaller than this (no-op)
+    min_trade_frac: float = 0.05      # no-trade band: ignore rebalances smaller than
+                                      # this fraction of equity, per asset. Without it
+                                      # a Gaussian policy churns every step and fees
+                                      # alone cost 20-40%/day.
     use_risk_gate: bool = True        # analyst's risk budget scales the trader's size
     decision_every: int = 5           # minutes between rebalances (marking stays 1m)
     n_envs: int = 16                  # parallel sampled trajectories over the same day
     reward_scale: float = 10.0
-    turnover_penalty: float = 0.0005
+    turnover_penalty: float = 0.002
     drawdown_penalty: float = 0.25
     target_bonus: float = 2.0         # terminal bonus for finishing at/above target
     bankrupt_penalty: float = 3.0
@@ -76,8 +79,8 @@ class PPOConfig:
     gae_lambda: float = 0.95
     clip_eps: float = 0.2
     value_coef: float = 0.5
-    entropy_coef: float = 0.01
-    entropy_final: float = 0.001
+    entropy_coef: float = 0.005
+    entropy_final: float = 0.0005
     max_grad_norm: float = 0.5
     update_epochs: int = 4
     minibatch_steps: int = 96         # decision steps per truncated-BPTT segment
