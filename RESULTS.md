@@ -31,25 +31,29 @@ answer. Two concrete fixes came out of that and are in the code:
 * `OMP/MKL/OPENBLAS` thread caps per rank and `--reserve-cores`, so a co-resident
   workload keeps its cores.
 
-## Run 2 — 531 epochs, CPU only, `tiny` preset
+## Run 2 — 600 epochs, CPU only, `tiny` preset
 
-A full training run end to end (2 cores, no GPU — so `tiny`, 16 trajectories/epoch,
-~2.7 s/epoch). Numbers are means over the first vs last 100 epochs:
+A complete training run end to end (2 cores, no GPU — so `tiny`, 16 trajectories per
+epoch, ~2.7 s/epoch, 195 charts produced). Means over the first vs last 100 epochs:
 
-| metric | first 100 | last 100 | |
-|---|---|---|---|
-| mean daily return | **−24.7%** | **−4.5%** | learning |
-| turnover (×equity/day) | 576 | **58** | learned to stop churning |
-| fees paid per day | $4.99 | **$0.58** | 8.6× less fee drag |
-| liquidation rate | 0% | **0%** | risk controls hold at 10× |
-| predictor IC | 0.006 | 0.023 | weak but rising |
-| predictor direction acc | 49.9% | 51.5% | barely above chance |
-| analyst regime acc | 68.7% | 69.0% | |
-| leverage (curriculum) | 4.5× | 10× | ramp completed |
+| metric | first 100 | last 100 |
+|---|---|---|
+| mean daily return | −24.7% | **−5.6%** |
+| turnover (× equity/day) | 576 | **69** |
+| fees paid per day | $4.99 | **$0.68** |
+| liquidation rate | 0% | **0%** |
+| predictor IC | 0.006 | **0.022** |
+| predictor direction acc | 49.9% | **51.1%** |
+| analyst regime acc | 68.7% | **68.9%** |
+| leverage (curriculum) | 4.5× | **10.0×** |
 
-Held-out evaluation at epoch 400 (8 days after the 2025-06-30 cutoff, deterministic
-policy): mean final equity **$19.33** from $20, i.e. **−3.4%**, **0%** of days reached
-$30.
+The headline is turnover collapsing 8× and fee drag with it; that is the policy
+learning that trading costs money. Zero liquidations across all 600 epochs even once
+the curriculum reached full 10× leverage.
+
+Held-out evaluation at epoch 599 (8 days after the 2025-06-30 cutoff, deterministic
+policy): mean final equity **$19.36** from $20, i.e. **−3.2%**, and **0%** of days
+reached $30.
 
 ![dashboard](docs/sample_run/dashboard.png)
 

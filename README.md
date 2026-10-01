@@ -198,9 +198,9 @@ tests/                    unit tests, run with `python -m pytest tests -q`
 
 ## Results
 
-See **[RESULTS.md](RESULTS.md)** for a real 531-epoch run: mean daily return improved
-from -24.7% to -4.5%, turnover fell 576x -> 58x, fees 8.6x lower, zero liquidations at
-10x leverage - and an honest held-out result of -3.4%/day with the $30 target never
+See **[RESULTS.md](RESULTS.md)** for a real 600-epoch run: mean daily return improved
+from -24.7% to -5.6%, turnover fell 576x -> 69x, fees 7x lower, zero liquidations at
+10x leverage - and an honest held-out result of -3.2%/day with the $30 target never
 reached. Charts in [`docs/sample_run/`](docs/sample_run).
 
 ## Honest notes
