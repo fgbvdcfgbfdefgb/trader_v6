@@ -63,6 +63,9 @@ class MarketAnalyst(nn.Module):
             "regime": self.head_regime(h),                           # [A, T, R]
             "vol": self.head_vol(h).squeeze(-1),                     # [A, T]
             "exposure": torch.tanh(self.head_expo(h)).squeeze(-1),   # [A, T]
+            # logits kept alongside the probability: BCE-with-logits is the only
+            # autocast-safe form, and AMP is on by default on GPU.
+            "conf_logit": self.head_conf(h).squeeze(-1),
             "confidence": torch.sigmoid(self.head_conf(h)).squeeze(-1),
             "risk_budget": torch.sigmoid(self.head_risk(mkt)).squeeze(-1).squeeze(0),  # [T]
         }
@@ -117,8 +120,8 @@ class MarketAnalyst(nn.Module):
         # confidence is calibrated against regime correctness
         with torch.no_grad():
             correct = (out["regime"].argmax(-1) == lab).float()
-        cl = (F.binary_cross_entropy(out["confidence"].clamp(1e-4, 1 - 1e-4),
-                                     correct, reduction="none") * mask).sum() \
+        cl = (F.binary_cross_entropy_with_logits(out["conf_logit"], correct,
+                                                 reduction="none") * mask).sum() \
             / mask.sum().clamp_min(1.0)
 
         total = ce + 0.5 * vl + 0.3 * align + reg + 0.2 * rl + 0.1 * cl

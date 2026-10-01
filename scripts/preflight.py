@@ -49,10 +49,17 @@ def main():
     missing = [f["path"] for f in man["files"]
                if not os.path.exists(os.path.join(ROOT, f["path"]))]
     size = sum(os.path.getsize(os.path.join(ddir, f)) for f in os.listdir(ddir))
-    if missing:
-        print(f"{BAD} {len(missing)} parquet file(s) missing, e.g. {missing[:3]}")
-        print("        if you used git-lfs or a shallow/sparse clone, re-clone fully")
+    present = len(man["files"]) - len(missing)
+    if missing and present == 0:
+        print(f"{BAD} no parquet files found - the checkout has no data at all")
+        print("        if you used git-lfs or a shallow clone, re-clone fully")
         fails += 1
+    elif missing:
+        years = sorted({os.path.basename(f).split("_")[1][:4]
+                        for f in os.listdir(ddir) if f.endswith(".parquet")})
+        print(f"  [warn] partial checkout: {present}/{len(man['files'])} parquet files "
+              f"present ({size/1e6:.0f} MB, years {years[0]}-{years[-1]})")
+        print("         fine for a small disk - training just sees fewer days")
     else:
         print(f"{OK} dataset complete: {len(man['files'])} files, {size/1e6:.0f} MB")
         for s, v in man["symbols"].items():
