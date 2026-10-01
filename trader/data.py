@@ -67,6 +67,11 @@ class MarketData:
             "lock": os.path.join(self.cache_dir, f"build_{tag}.lock"),
         }
 
+    def _ensure_dir(self):
+        """Re-create the cache dir before every write: on shared boxes /dev/shm and
+        /tmp can be swept out from under a long run."""
+        os.makedirs(self.cache_dir, exist_ok=True)
+
     def _log(self, *a):
         if self.verbose:
             print("[data]", *a, flush=True)
@@ -74,6 +79,10 @@ class MarketData:
     def _build_or_load(self):
         p = self._paths()
         if not (os.path.exists(p["grid"]) and os.path.exists(p["meta"])):
+            self._acquire_and_build(p)
+        if not os.path.exists(p["grid"]):
+            self._log("cache vanished after build (shared /tmp or /dev/shm swept?) "
+                      "- rebuilding")
             self._acquire_and_build(p)
         with open(p["meta"]) as f:
             self.meta = json.load(f)
@@ -95,6 +104,7 @@ class MarketData:
 
     def _acquire_and_build(self, p):
         """Only one process builds; the others wait for the lock to clear."""
+        os.makedirs(self.cache_dir, exist_ok=True)
         try:
             fd = os.open(p["lock"], os.O_CREAT | os.O_EXCL | os.O_WRONLY)
             os.write(fd, str(os.getpid()).encode())
@@ -145,6 +155,7 @@ class MarketData:
         n_minutes = n_days * DAY_MIN
         A, C = len(self.symbols), len(RAW_COLS)
 
+        self._ensure_dir()
         grid = np.lib.format.open_memmap(p["grid"], mode="w+", dtype=np.float32,
                                          shape=(A, n_minutes, C))
         # Pass 2: stream each parquet straight into its slice of the memmap.
@@ -212,6 +223,7 @@ class MarketData:
                     day_valid=day_ok.tolist(),
                     day_vol=np.nan_to_num(day_vol).astype(float).tolist(),
                     day_range=np.nan_to_num(day_range).astype(float).tolist())
+        self._ensure_dir()
         with open(p["meta"], "w") as f:
             json.dump(meta, f)
 
@@ -229,6 +241,7 @@ class MarketData:
         allf = np.concatenate(acc, axis=0)
         mean = allf.mean(axis=0)
         std = allf.std(axis=0)
+        self._ensure_dir()
         np.savez(p["stats"], mean=mean, std=std)
         self._log(f"cache built: {n_days} days, grid {grid.nbytes/1e6:.0f} MB")
 
